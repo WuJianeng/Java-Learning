@@ -51,3 +51,24 @@
 ```
 
 部分spring依赖非必须，可以在需要时再添加
+
+
+
+### 0.2	遇到的问题
+
+#### 0.2.1	找不到依赖注入的配置文件
+
+在引入xml配置文件后，经测试提示`Failed to load ApplicationContext`
+
+```java
+@ImportResource("classpath:CDConfig.xml")
+```
+
+<img src="C:\Users\WuJianeng\AppData\Roaming\Typora\typora-user-images\1574170219110.png" alt="1574170219110" style="zoom:80%;" />![1574170264239](C:\Users\WuJianeng\AppData\Roaming\Typora\typora-user-images\1574170264239.png)
+
+<img src="C:\Users\WuJianeng\AppData\Roaming\Typora\typora-user-images\1574170219110.png" alt="1574170219110" style="zoom:80%;" />![1574170264239](C:\Users\WuJianeng\AppData\Roaming\Typora\typora-user-images\1574170264239.png)查看`Caused by`这一行可以发现报错找不到文件。
+
+原因:
+
+该文件应该存放到`src/main/resources/`下的`CDConfig.xml`处。
+

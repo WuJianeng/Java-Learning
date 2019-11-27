@@ -1,0 +1,2 @@
+CREATE TRIGGER neworder AFTER INSERT ON orders
+FOR EACH ROW SELECT NEW.order_num INTO @result;
