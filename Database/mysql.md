@@ -639,3 +639,24 @@ WHERE order_num = 20005;
 算术运算包括：加减乘除，+-*/。
 
 圆括号可以用来区分优先顺序。
+
+
+
+
+
+## 22	使用视图
+
+视图是虚拟的表，它不包含表中应该有的任何列或者数据，它包含的是一个SQL查询
+
+
+
+
+
+
+
+- 视图用`CREATE VIEW viewname`语句来创建
+- 使用`SHOW CREATE VIEW viewname`来查看创建视图的语句
+- 用`DROP VIEW viewname`来删除视图
+- 更新视图，`DROP OR REPLACE VIEW。
+
+22.2.1
