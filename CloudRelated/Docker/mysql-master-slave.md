@@ -118,7 +118,7 @@ mysql> show master status;
 +------------------+----------+--------------+------------------+-------------------+
 | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
 +------------------+----------+--------------+------------------+-------------------+
-| mysql-bin.000001 |      745 |              |                  |                   |
+| mysql-bin.000001 |      2730 |              |                  |                   |
 +------------------+----------+--------------+------------------+-------------------+
 1 row in set (0.00 sec)
 ```
@@ -127,9 +127,9 @@ mysql> show master status;
 
 | 参数名          | 参数值           |
 | :-------------- | :--------------- |
-| master IP地址   | 172.17.0.2       |
+| master IP地址   | 172.17.0.7       |
 | bin log文件名   | mysql-bin.000001 |
-| bin log执行位置 | 745              |
+| bin log执行位置 | 2730             |
 
 至此，master已经设置成功，接下来设置slave吧，
 
@@ -145,30 +145,50 @@ docker run \
 mysql:5.7.21
 ```
 
-1. 执行docker exec -it slave /bin/bash进入容器
-2. 执行apt-get update更新apt；
-3. 执行apt-get install -y vim安装vim工具；
-4. 打开文件/etc/mysql/my.cnf，在尾部新增两行，内容如下：
+2. 执行docker exec -it slave /bin/bash进入容器3
+3. 执行apt-get update更新apt；
+4. 执行apt-get install -y vim安装vim工具；
+5. 打开文件/etc/mysql/my.cnf，在尾部新增两行，内容如下：
 
 ```bash
 [mysqld]
 server-id=2
 ```
 
-以上配置的作用是设置自己在集群中的id；6. 执行exit命令退出容器，再执行docker restart slave重启容器；7. 重启成功后再次进入slave容器，执行命令mysql -uroot -p进入mysql命令行，按照提示输入密码"888888"，成功进入；8. 在MySQL的命令行执行以下命令，设置主从同步的参数：
+以上配置的作用是设置自己在集群中的id；
+
+6. 执行exit命令退出容器，再执行docker restart slave重启容器；
+7. 重启成功后再次进入slave容器，执行命令mysql -uroot -p进入mysql命令行，按照提示输入密码"888888"，成功进入；
+8. 在MySQL的命令行执行以下命令，设置主从同步的参数：
 
 ```bash
-CHANGE MASTER TO MASTER_HOST='172.17.0.2', \
+CHANGE MASTER TO MASTER_HOST='172.17.0.7', \
 MASTER_USER='rep', \
 MASTER_PASSWORD='888888', \
 MASTER_LOG_FILE='mysql-bin.000001', \
-MASTER_LOG_POS=745;
+MASTER_LOG_POS=2730;
 ```
 
-MASTER_HOST是master的IP地址；MASTER_USER和MASTER_PASSWORD是master授权的同步账号和密码；MASTER_LOG_FILE是master的bin log文件名；MASTER_LOG_POS是bin log同步的位置；9. 在MySQL命令行执行start slave;启动同步；10. 在MySQL命令行执行show slave status\G查看同步状态，如下:
+MASTER_HOST是master的IP地址；
+
+MASTER_USER和MASTER_PASSWORD是master授权的同步账号和密码；
+
+MASTER_LOG_FILE是master的bin log文件名；
+
+MASTER_LOG_POS是bin log同步的位置；
+
+9. 在MySQL命令行执行start slave;启动同步；
+10. 在MySQL命令行执行show slave status\G查看同步状态，如下:
 
 ```bash
-mysql> CHANGE MASTER TO MASTER_HOST='172.17.0.2', \    -> MASTER_USER='rep', \    -> MASTER_PASSWORD='888888', \    -> MASTER_LOG_FILE='mysql-bin.000001', \    -> MASTER_LOG_POS=745;Query OK, 0 rows affected, 2 warnings (1.68 sec)mysql> start slave;Query OK, 0 rows affected (0.04 sec)
+mysql> CHANGE MASTER TO MASTER_HOST='172.17.0.2', \
+-> MASTER_USER='rep', \
+-> MASTER_PASSWORD='888888', \
+-> MASTER_LOG_FILE='mysql-bin.000001', \
+-> MASTER_LOG_POS=745;
+Query OK, 0 rows affected, 2 warnings (1.68 sec)
+mysql> start slave;
+Query OK, 0 rows affected (0.04 sec)
 mysql> show slave status\G
 *************************** 1. row ***************************               Slave_IO_State: Waiting for master to send event                 
 Master_Host: 172.17.0.2                  
@@ -235,11 +255,18 @@ Master_TLS_Version: 1 row in set (0.00 sec)
 
 1. 进入master容器的MySQL命令行，执行以下四个命令，完成创建数据库、选择数据库、创建表、新增记录等操作：
 
-```
-create database test001;use test001;CREATE TABLE `test_table` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `name` varchar(100) DEFAULT NULL,  PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;insert into test_table(name) values ('jerry');
+```mysql
+create database test001;
+use test001;
+CREATE TABLE `test_table` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `name` varchar(100) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+insert into test_table(name) values ('jerry');
 ```
 
-1. 进入slave容器的MySQL命令行，选择test001数据库，可以看到表test_table和记录都已经同步过来了，如下：
+2. 进入slave容器的MySQL命令行，选择test001数据库，可以看到表test_table和记录都已经同步过来了，如下：
 
 ```
 mysql> show databases;
@@ -261,3 +288,11 @@ mysql> select * from test_table;
 ```
 
 至此，Docker 下手工配置 MySQL 主从的实战就完成了，经过这次实战我们熟悉了整个设置的过程，接下来的章节我们将这些配置都做进自制的镜像中，实现支持主从同步的docker镜像，这样容器启动后无需设置就支持同步了；
+
+
+
+### 备注
+
+原来同一个 mysql 数据库系统下的不同账户共享同样的数据库，只是权限等可能会不同。
+
+因此在 master 上使用 root 账户创建数据库会对 rep 账户产生影响。
